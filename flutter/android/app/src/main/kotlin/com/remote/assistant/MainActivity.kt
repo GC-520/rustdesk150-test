@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package com.remote.assistant
 
 /**
  * Handle events from flutter

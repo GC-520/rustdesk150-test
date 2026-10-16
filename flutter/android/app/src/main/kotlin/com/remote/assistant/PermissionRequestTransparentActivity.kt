@@ -1,4 +1,4 @@
-package com.carriez.flutter_hbb
+package com.remote.assistant
 
 import android.app.Activity
 import android.content.Intent
