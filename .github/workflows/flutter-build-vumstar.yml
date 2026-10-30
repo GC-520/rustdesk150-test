@@ -22,7 +22,7 @@ env:
   RUST_VERSION: "1.75" # sciter failed on m1 with 1.78 because of https://blog.rust-lang.org/2024/03/30/i128-layout-update.html
   MAC_RUST_VERSION: "1.81" # 1.81 is requred for macos, because of https://github.com/yury/cidre requires 1.81
   CARGO_NDK_VERSION: "3.1.2"
-  SCITER_ARMV7_CMAKE_VERSION: "3.29.7"
+  SCITER_ARMV7_CMAKE_VERSION: "3.31.6" # >= 3.30 required by vcpkg 2026+ SPDX scripts (string JSON STRING_ENCODE)
   SCITER_NASM_DEBVERSION: "2.15.05-1"
   LLVM_VERSION: "15.0.6"
   FLUTTER_VERSION: "3.24.5"
@@ -1334,6 +1334,16 @@ jobs:
             sudo apt-get install -y qemu-user-static
           fi
 
+      - name: Install modern CMake on host (vcpkg 2026+ SPDX scripts need >= 3.30)
+        run: |
+          CMAKE_VERSION=3.31.6
+          if [[ "${{ matrix.job.arch }}" == "aarch64" ]]; then CMAKE_ARCH=aarch64; else CMAKE_ARCH=x86_64; fi
+          curl -sSfL -o /tmp/cmake.tar.gz "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-${CMAKE_ARCH}.tar.gz"
+          sudo mkdir -p /opt/cmake-${CMAKE_VERSION}
+          sudo tar -xzf /tmp/cmake.tar.gz --strip-components=1 -C /opt/cmake-${CMAKE_VERSION}
+          rm -f /tmp/cmake.tar.gz
+          echo "/opt/cmake-${CMAKE_VERSION}/bin" >> $GITHUB_PATH
+
       - name: Checkout source code
         uses: actions/checkout@v4
         with:
@@ -1755,6 +1765,12 @@ jobs:
               popd
               rm -rf /tmp/cmake
               export PATH="/opt/cmake-${{ env.SCITER_ARMV7_CMAKE_VERSION }}-linux-armhf/bin:$PATH"
+            else
+              # x64-linux: install modern CMake (>= 3.30) required by vcpkg 2026+ SPDX scripts
+              CMAKE_VERSION=3.31.6
+              wget -q -O /tmp/cmake.tar.gz "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz"
+              tar -xzf /tmp/cmake.tar.gz --strip-components=1 -C /usr/local
+              rm -f /tmp/cmake.tar.gz
             fi
             # bootstrap vcpkg and set VCPKG_ROOT
             export VCPKG_ROOT=/opt/artifacts/vcpkg
